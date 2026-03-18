@@ -1,0 +1,12 @@
+[package]
+name = "adi0nt/fluent-renewed-plus-plus"
+version = "1.0.1"
+license = "MIT"
+authors = ["Adi0nt"]
+registry = "https://github.com/UpliftGames/wally-index"
+repository = "https://github.com/Adi0nt/fluent-renewed-plus-plus"
+realm = "shared"
+
+[dependencies]
+Signal = "lucasmzreal/fastsignal@10.4.0"
+Flipper = "reselim/flipper@2.0.0"
