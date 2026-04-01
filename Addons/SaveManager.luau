@@ -54,7 +54,7 @@ end
 
 local SaveManager = {}
 do
-	SaveManager.Folder = "FluentSettings"
+	SaveManager.Folder = "FluentZenithSettings"
 	SaveManager.Ignore = {}
 	SaveManager.Options, SaveManager.Library =
 		{} :: {

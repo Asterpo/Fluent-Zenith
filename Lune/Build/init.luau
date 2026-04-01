@@ -158,7 +158,7 @@ elseif Subcommand == "bundle" then
 		["script-output"] = { "string", "Distribution/Fluent.luau" },
 		["model-output"] = { "string", "Distribution/Fluent.rbxm" },
 		["minify"] = { "boolean", false },
-		["env-name"] = { "string", "Fluent Renewed Plus Plus" },
+		["env-name"] = { "string", "Fluent Zenith" },
 		["darklua-config-path"] = { "string", "Lune/Build/DarkLua Config.json" },
 		["temp-dir-base"] = { "string", "Distribution" },
 		["extra-offset-lines"] = { "number", 0 },

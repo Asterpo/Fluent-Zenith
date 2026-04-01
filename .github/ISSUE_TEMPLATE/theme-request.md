@@ -1,6 +1,6 @@
 ---
 name: Theme request
-about: Suggest a theme to be added to Fluent Renewed
+about: Suggest a theme to be added to Fluent Zenith
 title: "Add THEMENAME Theme NOW! \U0001F47A"
 labels: theme suggestion
 assignees: ActualMasterOogway

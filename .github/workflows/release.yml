@@ -32,7 +32,7 @@ jobs:
           gh release create "v${VERSION_HYPHEN}" --title "${VERSION}" --notes "${{ github.event.inputs.summary }}" --latest
 
   build-script:
-    name: Bundle and Upload Fluent Renewed Plus Plus
+    name: Bundle and Upload Fluent Zenith
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -54,13 +54,13 @@ jobs:
       - name: Build
         run: lune run Lune/Build bundle header=Lune/Build/Header.luau minify=true ci-mode=true
 
-      - name: Upload Minified Fluent Renewed Plus Plus to Artifacts
+      - name: Upload Minified Fluent Zenith to Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Fluent.luau
           path: Distribution/Fluent.luau
       
-      - name: Upload Minified Fluent Renewed Plus Plus to Release
+      - name: Upload Minified Fluent Zenith to Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -69,7 +69,7 @@ jobs:
           gh release upload "v$versionHyphen" "Distribution/Fluent.luau"
         shell: pwsh
       
-      - name: Upload Fluent Renewed Plus Plus Model to Release
+      - name: Upload Fluent Zenith Model to Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -78,7 +78,7 @@ jobs:
           gh release upload "v$versionHyphen" "Distribution/Fluent.rbxm"
         shell: pwsh
 
-      - name: Upload Fluent Renewed Plus Plus Model to Artifacts
+      - name: Upload Fluent Zenith Model to Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Fluent.rbxm

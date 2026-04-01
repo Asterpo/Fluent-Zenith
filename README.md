@@ -1,7 +1,7 @@
-# Fluent Renewed Plus
+# Fluent Zenith
 
-![Fluent Renewed Title](Assets/darkmode.png#gh-dark-mode-only)
-![Fluent Renewed Title](Assets/darkmode.png#gh-light-mode-only)
+![Fluent Zenith Title](Assets/darkmode.png#gh-dark-mode-only)
+![Fluent Zenith Title](Assets/darkmode.png#gh-light-mode-only)
 
 ## ⚡ Features
 
@@ -12,25 +12,25 @@
 
 ## 🔌 Installation
 
-You can load Fluent through a GitHub Release:
+You can load Fluent Zenith through a GitHub Release:
 
 ```lua
-local Library = loadstring(game:GetService("HttpService"):GetAsync("https://github.com/Asterpo/Fluent-Renewed-Plus/releases/latest/download/Fluent.luau", true))()
+local Library = loadstring(game:GetService("HttpService"):GetAsync("https://github.com/Asterpo/Fluent-Zenith/releases/latest/download/Fluent.luau", true))()
 ```
 
 ```lua
-local Library = loadstring(game:HttpGetAsync("https://github.com/Asterpo/Fluent-Renewed-Plus/releases/latest/download/Fluent.luau", true))()
+local Library = loadstring(game:HttpGetAsync("https://github.com/Asterpo/Fluent-Zenith/releases/latest/download/Fluent.luau", true))()
 ```
 
 ## 📜 Usage
 
-[Example Script the studio environment](https://github.com/Asterpo/Fluent-Renewed-Plus/blob/main/Example.client.luau)
+[Example Script the studio environment](https://github.com/Asterpo/Fluent-Zenith/blob/main/Example.client.luau)
 
-[Example Script for an exploit environment](https://github.com/Asterpo/Fluent-Renewed-Plus/blob/main/Example.lua)
+[Example Script for an exploit environment](https://github.com/Asterpo/Fluent-Zenith/blob/main/Example.lua)
 
 ## Credits
 
-- [Asterpo](https://github.com/Asterpo/Fluent-Renewed-Plus) - The master mind behind Fluent Renewed Plus
+- [Fluent Zenith](https://github.com/Asterpo/Fluent-Zenith) - The master mind behind Fluent Zenith
 - [Adiont](https://github.com/Adi0nt/Fluent-Renewed-Plus) - The original creator of Fluent Renewed Plus
 - [Master Oogway](https://github.com/ActualMasterOogway/Fluent-Renewed) - The master mind behind Fluent Renewed
 - [dawid](https://github.com/dawid-scripts/Fluent) - The master mind behind Fluent

@@ -72,7 +72,7 @@ local function RandomString(length)
 end
 
 local BaseContainer = New("ScreenGui", {
-	Name = "Fluent Renewed Plus Plus Base GUI",
+	Name = "Fluent Zenith Base GUI",
 })
 
 -- Security: protect the ScreenGui from being detected/tampered with
@@ -130,7 +130,7 @@ BaseContainer.Parent = (
 	end
 )()
 
-SharedTable.FluentRenewedPlusPlus = SharedTable.FluentRenewedPlusPlus or {}
+SharedTable.FluentZenith = SharedTable.FluentZenith or {}
 
 NotificationModule:Init(BaseContainer)
 
@@ -298,7 +298,7 @@ function Library:Window(Config: {
 	if not Config.Title then
 		local Success, Game_Info = pcall(MarketplaceService.GetProductInfoAsync, MarketplaceService, game.PlaceId)
 
-		Config.Title = Success and Game_Info.Name or "Fluent Renewed Plus Plus"
+		Config.Title = Success and Game_Info.Name or "Fluent Zenith"
 	end
 
 	Config.MinSize = if typeof(Config.MinSize) == "Vector2" then Config.MinSize else Vector2.new(470, 380)
@@ -340,7 +340,7 @@ function Library:Window(Config: {
 		MinSize = Config.MinSize,
 
 		Title = Config.Title,
-		SubTitle = Config.SubTitle or "Made with Fluent Renewed Plus Plus",
+		SubTitle = Config.SubTitle or "Made with Fluent Zenith",
 
 		TabWidth = Config.TabWidth or 160,
 		Mobile = Config.Mobile or {

@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for Fluent Renewed
+about: Suggest an idea for Fluent Zenith
 title: ''
 labels: enhancement
 assignees: ActualMasterOogway

@@ -1,8 +1,8 @@
-local Library = require(game:GetService("ReplicatedStorage"):WaitForChild("Fluent"):WaitForChild("MainModule"))
+local Library = require(game:GetService("ReplicatedStorage"):WaitForChild("Fluent Zenith"):WaitForChild("MainModule"))
 
 local Window = Library:Window{
-    Title = `Fluent {Library.Version}`,
-    SubTitle = "by Actual Master Oogway",
+    Title = `Fluent Zenith {Library.Version}`,
+    SubTitle = "by Fluent Zenith",
     TabWidth = 160,
     Size = UDim2.fromOffset(830, 525),
     Resize = true,
@@ -385,7 +385,7 @@ Library.MinimizeKeybind = Library.Options.MenuKeybind
 Window:SelectTab(1)
 
 Library:Notify({
-    Title = "Fluent",
+    Title = "Fluent Zenith",
     Content = "The script has been loaded.",
     Duration = 8,
     Sound = {

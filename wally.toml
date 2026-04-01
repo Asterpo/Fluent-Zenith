@@ -1,10 +1,10 @@
 [package]
-name = "adi0nt/fluent-renewed-plus-plus"
+name = "asterpo/fluent-zenith"
 version = "1.0.1"
 license = "MIT"
-authors = ["Adi0nt"]
+authors = ["Asterpo"]
 registry = "https://github.com/UpliftGames/wally-index"
-repository = "https://github.com/Adi0nt/fluent-renewed-plus-plus"
+repository = "https://github.com/Asterpo/Fluent-Zenith"
 realm = "shared"
 
 [dependencies]

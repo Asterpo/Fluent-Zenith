@@ -2,7 +2,7 @@ local httpService = game:GetService("HttpService")
 
 local InterfaceManager = {}
 do
-	InterfaceManager.Folder = "FluentRenewedPlusPlusSettings"
+	InterfaceManager.Folder = "FluentZenithSettings"
 
 	InterfaceManager.Settings = {
 		Theme = "Dark",
