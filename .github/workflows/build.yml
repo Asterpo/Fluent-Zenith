@@ -47,7 +47,7 @@ jobs:
           wally install --project-path .
 
       - name: Check formatting
-        run: stylua --check PublicTypes.luau Test.luau Src/Modules/Adapters.luau Src/Modules/Scope.luau Src/Modules/Runtime.luau Src/Modules/InputValue.luau Addons/Runtime.luau
+        run: stylua --check --line-endings Unix PublicTypes.luau Test.luau Src/Modules/Adapters.luau Src/Modules/Scope.luau Src/Modules/Runtime.luau Src/Modules/InputValue.luau Addons/Runtime.luau
 
       - name: Lint Luau
         run: selene --allow-warnings Src Addons Test.luau PublicTypes.luau

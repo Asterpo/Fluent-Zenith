@@ -2,6 +2,12 @@
 
 All notable changes are documented here. Entries are generated from normalized pull-request metadata by Release Please.
 
+## [1.2.2] - 2026-07-24
+
+### Fixed
+
+- Pass the StyLua line-ending policy directly to CI so the release gate is platform-independent.
+
 ## [1.2.1] - 2026-07-24
 
 ### Fixed
