@@ -1,7 +1,7 @@
 # Fluent Zenith Product Roadmap
 
 - **Roadmap date:** July 24, 2026
-- **Current package version:** 1.2.2
+- **Current package version:** 1.2.3
 - **Planning horizon:** Seven planned releases over approximately 20 weeks
 - **Target environments:** Roblox Studio, PlayerGui, Roblox plugins, and compatible UNC runtimes through defensive adapters
 

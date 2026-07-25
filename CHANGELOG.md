@@ -2,6 +2,12 @@
 
 All notable changes are documented here. Entries are generated from normalized pull-request metadata by Release Please.
 
+## [1.2.3] - 2026-07-24
+
+### Fixed
+
+- Match CI formatting checks to the Windows checkout line-ending policy.
+
 ## [1.2.2] - 2026-07-24
 
 ### Fixed
