@@ -81,7 +81,7 @@ jobs:
           foreach ($hash in $hashes) { $files[(Split-Path $hash.Path -Leaf)] = @{ size = (Get-Item $hash.Path).Length; sha256 = $hash.Hash.ToLowerInvariant() } }
           @{ version = $version; tag = $env:GITHUB_REF_NAME; commit = $env:GITHUB_SHA; tools = @{ rokit = (rokit --version); wally = (wally --version); stylua = (stylua --version); selene = (selene --version) }; files = $files } | ConvertTo-Json -Depth 4 | Set-Content Distribution/release-manifest.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ inputs.artifact-name }}
           if-no-files-found: error
