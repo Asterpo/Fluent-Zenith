@@ -1,4 +1,14 @@
 local httpService = game:GetService("HttpService")
+local Runtime = require(script.Parent.Runtime)
+
+local function CallFilesystem(Name: string, ...: any): (boolean, ...any)
+	return Runtime.CallSafely(Name, Runtime.GetGlobal(Name), ...)
+end
+
+local function IsFile(Path: string): boolean
+	local Success, Exists = CallFilesystem("isfile", Path)
+	return Success and Exists == true
+end
 
 type Dropdown = { Value: any, Values: { i: any }, Multi: boolean, Displayer: (v) -> n?, SetValue: (any) -> () }
 
@@ -207,7 +217,10 @@ do
 			return false, "Failed to JSON-Encode data"
 		end
 
-		writefile(fullPath, encoded)
+		local Written = CallFilesystem("writefile", fullPath, encoded)
+		if not Written then
+			return false, "File persistence is unavailable"
+		end
 		return true
 	end
 
@@ -217,11 +230,16 @@ do
 		end
 
 		local file = `{self.Folder}/settings/{name}.json`
-		if not isfile(file) then
+		if not IsFile(file) then
 			return false, "invalid file"
 		end
 
-		local success, decoded = pcall(httpService.JSONDecode, httpService, readfile(file))
+		local Read, Content = CallFilesystem("readfile", file)
+		if not Read then
+			return false, "File persistence is unavailable"
+		end
+
+		local success, decoded = pcall(httpService.JSONDecode, httpService, Content)
 		if not success then
 			return false, "decode error"
 		end
@@ -254,14 +272,26 @@ do
 
 		for i = 1, #paths do
 			local str = paths[i]
-			if not isfolder(str) then
-				makefolder(str)
+			local Checked, Exists = CallFilesystem("isfolder", str)
+			if not Checked then
+				return false
+			end
+			if not Exists then
+				local Created = CallFilesystem("makefolder", str)
+				if not Created then
+					return false
+				end
 			end
 		end
+
+		return true
 	end
 
 	function SaveManager:RefreshConfigList()
-		local list = listfiles(`{self.Folder}/settings`)
+		local Listed, list = CallFilesystem("listfiles", `{self.Folder}/settings`)
+		if not Listed or typeof(list) ~= "table" then
+			return {}
+		end
 
 		local out = {}
 		for i = 1, #list do
@@ -296,8 +326,11 @@ do
 	end
 
 	function SaveManager:LoadAutoloadConfig()
-		if isfile(`{self.Folder}/settings/autoload.txt`) then
-			local name = readfile(`{self.Folder}/settings/autoload.txt`)
+		if IsFile(`{self.Folder}/settings/autoload.txt`) then
+			local Read, name = CallFilesystem("readfile", `{self.Folder}/settings/autoload.txt`)
+			if not Read then
+				return nil
+			end
 
 			local success, err = self:Load(name)
 			if not success then
@@ -431,7 +464,15 @@ do
 			Description = "Current autoload config: none",
 			Callback = function()
 				local name = SaveManager.Options.SaveManager_ConfigList.Value
-				writefile(`{self.Folder}/settings/autoload.txt`, name)
+				local Written = CallFilesystem("writefile", `{self.Folder}/settings/autoload.txt`, name)
+				if not Written then
+					return self.Library:Notify({
+						Title = "Interface",
+						Content = "Config loader",
+						SubContent = "File persistence is unavailable in this runtime.",
+						Duration = 7,
+					})
+				end
 				AutoloadButton:SetDesc("Current autoload config: " .. name)
 				self.Library:Notify({
 					Title = "Interface",
@@ -442,9 +483,11 @@ do
 			end,
 		})
 
-		if isfile(`{self.Folder}/settings/autoload.txt`) then
-			local name = readfile(`{self.Folder}/settings/autoload.txt`)
-			AutoloadButton:SetDesc("Current autoload config: " .. name)
+		if IsFile(`{self.Folder}/settings/autoload.txt`) then
+			local Read, name = CallFilesystem("readfile", `{self.Folder}/settings/autoload.txt`)
+			if Read then
+				AutoloadButton:SetDesc("Current autoload config: " .. name)
+			end
 		end
 
 		SaveManager:SetIgnoreIndexes({ "SaveManager_ConfigList", "SaveManager_ConfigName" })

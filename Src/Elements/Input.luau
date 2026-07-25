@@ -1,5 +1,6 @@
 local Root = script.Parent.Parent
 local Creator = require(Root.Modules.Creator)
+local InputValue = require(Root.Modules.InputValue)
 
 local AddSignal = Creator.AddSignal
 local Components = Root.Components
@@ -37,19 +38,10 @@ function Element:New(Idx, Config)
 	local Box = Textbox.Input
 
 	function Input:SetValue(Text)
-		if Config.MaxLength and #Text > Config.MaxLength then
-			Text = Text:sub(1, Config.MaxLength)
-		end
+		local Value, DisplayText = InputValue.Normalize(Text, Input.Numeric, Input.Value, Config.MaxLength)
 
-		if Input.Numeric then
-			if (not tonumber(Text)) and Text:len() > 0 then
-				Text = Input.Value
-			end
-			Text = tonumber(Text)
-		end
-
-		rawset(Input, "Value", Text)
-		Box.Text = tostring(Text or "")
+		rawset(Input, "Value", Value)
+		Box.Text = DisplayText
 
 		if typeof(Input.Callback) == "function" then
 			Library:SafeCallback(Input.Callback, Input.Value)

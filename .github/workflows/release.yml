@@ -1,48 +1,60 @@
 name: Release
 
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version of this release (e.g. v1.0)'
+      tag:
+        description: "Existing release tag to publish (for example v1.0.2)"
         required: true
-        default: '1.0'
+        type: string
       summary:
-        description: 'Summary of this release'
-        required: true
-        default: 'Initial release'
-  push:
-    tags: ["v*"]
+        description: "Optional release summary; leave blank to generate notes"
+        required: false
+        type: string
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
 
 jobs:
-  create-release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          VERSION="${{ github.event.inputs.version }}"
-          VERSION_HYPHEN="${VERSION// /-}"
-          gh release create "v${VERSION_HYPHEN}" --title "${VERSION}" --notes "${{ github.event.inputs.summary }}" --latest
-
-  build-script:
-    name: Bundle and Upload Fluent Zenith
+  build:
+    name: Build and verify release assets
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out release commit
+        uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
           submodules: true
+
+      - name: Verify exact release tag
+        shell: pwsh
+        run: |
+          $expected = if ("${{ github.event_name }}" -eq "workflow_dispatch") { "${{ inputs.tag }}" } else { "${{ github.ref_name }}" }
+          if ($expected -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw "Release tags must use vMAJOR.MINOR.PATCH: $expected"
+          }
+          $actual = git describe --tags --exact-match HEAD
+          if ($actual -ne $expected) {
+            throw "Checked out $actual, expected $expected"
+          }
+          $version = $expected.Substring(1)
+          $packageVersion = [regex]::Match((Get-Content wally.toml -Raw), 'version\s*=\s*"([^"]+)"').Groups[1].Value
+          $runtimeVersion = [regex]::Match((Get-Content Src/init.luau -Raw), 'Version\s*=\s*"([^"]+)"').Groups[1].Value
+          if ($packageVersion -ne $version -or $runtimeVersion -ne $version) {
+            throw "Tag $expected, package $packageVersion, and runtime $runtimeVersion must match"
+          }
 
       - name: Setup RoKit
         uses: CompeyDev/setup-rokit@v0.1.2
 
-      - name: Install Necessary Tools
+      - name: Install required tools
         run: |
           rokit trust rojo-rbx/rojo
           rokit trust lune-org/lune
@@ -51,35 +63,87 @@ jobs:
           rokit trust JohnnyMorganz/wally-package-types
           rokit install
 
-      - name: Build
+      - name: Run regression tests
+        run: lune run Test.luau
+
+      - name: Compile add-ons
+        shell: pwsh
+        run: |
+          darklua process Addons/SaveManager.luau "$env:RUNNER_TEMP/SaveManager.luau"
+          darklua process Addons/InterfaceManager.luau "$env:RUNNER_TEMP/InterfaceManager.luau"
+
+      - name: Build distribution assets
         run: lune run Lune/Build bundle header=Lune/Build/Header.luau minify=true ci-mode=true
 
-      - name: Upload Minified Fluent Zenith to Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Fluent.luau
-          path: Distribution/Fluent.luau
-      
-      - name: Upload Minified Fluent Zenith to Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $version = "${{ github.event.inputs.version }}"
-          $versionHyphen = $version -replace " ", "-"
-          gh release upload "v$versionHyphen" "Distribution/Fluent.luau"
+      - name: Verify assets and create checksums
         shell: pwsh
-      
-      - name: Upload Fluent Zenith Model to Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $version = "${{ github.event.inputs.version }}"
-          $versionHyphen = $version -replace " ", "-"
-          gh release upload "v$versionHyphen" "Distribution/Fluent.rbxm"
-        shell: pwsh
+          $assets = @("Distribution/Fluent.luau", "Distribution/Fluent.rbxm")
+          foreach ($asset in $assets) {
+            if (-not (Test-Path $asset) -or (Get-Item $asset).Length -eq 0) {
+              throw "Expected non-empty release asset: $asset"
+            }
+          }
+          Get-FileHash $assets -Algorithm SHA256 | ForEach-Object {
+            "{0} *{1}" -f $_.Hash.ToLowerInvariant(), (Split-Path $_.Path -Leaf)
+          } | Set-Content -NoNewline Distribution/SHA256SUMS.txt
 
-      - name: Upload Fluent Zenith Model to Artifacts
+      - name: Upload verified release assets
         uses: actions/upload-artifact@v4
         with:
-          name: Fluent.rbxm
-          path: Distribution/Fluent.rbxm
+          name: release-assets
+          if-no-files-found: error
+          path: |
+            Distribution/Fluent.luau
+            Distribution/Fluent.rbxm
+            Distribution/SHA256SUMS.txt
+
+  publish:
+    name: Publish verified release
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+    steps:
+      - name: Resolve release metadata
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_SUMMARY: ${{ inputs.summary }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          TAG="$REF_NAME"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then TAG="$INPUT_TAG"; fi
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: $TAG" >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          printf '%s' "$INPUT_SUMMARY" > release-summary.md
+
+      - name: Download verified release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets
+
+      - name: Create or update draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release-assets/* --clobber
+          elif [ -s release-summary.md ]; then
+            gh release create "$TAG" --title "$TAG" --draft --notes-file release-summary.md release-assets/*
+          else
+            gh release create "$TAG" --title "$TAG" --draft --generate-notes release-assets/*
+          fi
+
+      - name: Publish release only after asset upload succeeds
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: gh release edit "$TAG" --draft=false --latest

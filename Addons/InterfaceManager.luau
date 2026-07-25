@@ -1,4 +1,14 @@
 local httpService = game:GetService("HttpService")
+local Runtime = require(script.Parent.Runtime)
+
+local function CallFilesystem(Name: string, ...: any): (boolean, ...any)
+	return Runtime.CallSafely(Name, Runtime.GetGlobal(Name), ...)
+end
+
+local function IsFile(Path: string): boolean
+	local Success, Exists = CallFilesystem("isfile", Path)
+	return Success and Exists == true
+end
 
 local InterfaceManager = {}
 do
@@ -41,21 +51,33 @@ do
 
 		for i = 1, #paths do
 			local str = paths[i]
-			if not isfolder(str) then
-				makefolder(str)
+			local Checked, Exists = CallFilesystem("isfolder", str)
+			if not Checked then
+				return false
+			end
+			if not Exists then
+				local Created = CallFilesystem("makefolder", str)
+				if not Created then
+					return false
+				end
 			end
 		end
+
+		return true
 	end
 
 	function InterfaceManager:SaveSettings()
-		writefile(`{self.Folder}/options.json`, httpService:JSONEncode(InterfaceManager.Settings))
+		return CallFilesystem("writefile", `{self.Folder}/options.json`, httpService:JSONEncode(InterfaceManager.Settings))
 	end
 
 	function InterfaceManager:LoadSettings()
 		local path = `{self.Folder}/options.json`
 
-		if isfile(path) then
-			local data = readfile(path)
+		if IsFile(path) then
+			local Read, data = CallFilesystem("readfile", path)
+			if not Read then
+				return false
+			end
 			local success, decoded = pcall(httpService.JSONDecode, httpService, data)
 
 			if success then
@@ -64,6 +86,8 @@ do
 				end
 			end
 		end
+
+		return true
 	end
 
 	function InterfaceManager:BuildInterfaceSection(tab)

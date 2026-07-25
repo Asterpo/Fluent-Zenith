@@ -1,10 +1,27 @@
+local Root = script
+local Runtime = require(Root.Modules.Runtime)
+
 local function Clone<Original>(ToClone: any & Original): (Original, boolean)
 	local Type = typeof(ToClone)
 
-	if Type == "function" and (clonefunc or clonefunction) then
-		return (clonefunc or clonefunction)(ToClone), true
-	elseif Type == "Instance" and (cloneref or clonereference) then
-		return (cloneref or clonereference)(ToClone), true
+	if Type == "function" then
+		local Success, Cloned = Runtime.CallSafely(
+			"clonefunc",
+			Runtime.GetGlobal("clonefunc") or Runtime.GetGlobal("clonefunction"),
+			ToClone
+		)
+		if Success then
+			return Cloned, true
+		end
+	elseif Type == "Instance" then
+		local Success, Cloned = Runtime.CallSafely(
+			"cloneref",
+			Runtime.GetGlobal("cloneref") or Runtime.GetGlobal("clonereference"),
+			ToClone
+		)
+		if Success then
+			return Cloned, true
+		end
 	elseif Type == "table" then
 		local function deepcopy(orig, copies: { [any]: any }?)
 			local Copies = copies or {}
@@ -45,7 +62,6 @@ local Camera = Clone(game:GetService("Workspace")).CurrentCamera
 local UserInputService = Clone(game:GetService("UserInputService"))
 local GuiService = Clone(game:GetService("GuiService"))
 
-local Root = script
 local Components = Root.Components
 
 local Creator = require(Root.Modules.Creator)
@@ -77,14 +93,16 @@ local BaseContainer = New("ScreenGui", {
 
 -- Security: protect the ScreenGui from being detected/tampered with
 -- Supports protectgui (Synapse X) and syn.protect_gui, falls back to no-op
-local protectgui = protectgui or (syn and syn.protect_gui) or (function() end)
-pcall(protectgui, BaseContainer)
+local Syn = Runtime.GetGlobal("syn")
+local ProtectGui = Runtime.GetGlobal("protectgui") or (Syn and Syn.protect_gui)
+Runtime.CallSafely("protectgui", ProtectGui, BaseContainer)
 
 BaseContainer.Parent = (
 	function() -- https://github.com/Pepsied-5229/Pepsi-UI-Library/blob/main/Pepsi-UI-Library.lua#L503
-		local success, result = pcall(function()
-			return (gethui or get_hidden_ui)()
-		end)
+		local success, result = Runtime.CallSafely(
+			"gethui",
+			Runtime.GetGlobal("gethui") or Runtime.GetGlobal("get_hidden_ui")
+		)
 
 		if success and result then
 			return result
@@ -135,7 +153,7 @@ SharedTable.FluentZenith = SharedTable.FluentZenith or {}
 NotificationModule:Init(BaseContainer)
 
 local Library = {
-	Version = "1.0.1",
+	Version = "1.0.2",
 
 	OpenFrames = {},
 	Options = {},

@@ -88,7 +88,7 @@ return function(Title, Desc, Parent, Hover, Config)
 	}) :: TextButton
 
 	function Element:SetTitle(Set)
-		Element.TitleLabel.Text = Set or ""
+		Element.TitleLabel.Text = tostring(Set or "")
 	end
 
 	function Element:SetDesc(Set)
