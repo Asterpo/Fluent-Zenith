@@ -2,6 +2,12 @@
 
 All notable changes are documented here. Entries are generated from normalized pull-request metadata by Release Please.
 
+## [1.2.1] - 2026-07-24
+
+### Fixed
+
+- Made StyLua line endings explicit so Windows CI and repository checkouts apply the same formatting rules.
+
 ## [1.2.0] - 2026-07-24
 
 ### Added

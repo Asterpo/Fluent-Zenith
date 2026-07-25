@@ -155,7 +155,7 @@ SharedTable.FluentZenith = SharedTable.FluentZenith or {}
 NotificationModule:Init(BaseContainer)
 
 local Library = {
-	Version = "1.2.0",
+	Version = "1.2.1",
 
 	OpenFrames = {},
 	Options = {},
