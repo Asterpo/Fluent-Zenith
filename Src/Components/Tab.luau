@@ -36,10 +36,12 @@ function TabModule:New(Title, Icon, Parent)
 	local TabIndex = TabModule.TabCount
 
 	local Tab = {
+		Scope = Window.Scope:Child(),
 		Selected = false,
 		Name = Title,
 		Type = "Tab",
 	}
+	local restoreScope = Creator.PushScope(Tab.Scope)
 
 	Icon = Icon:find("^rbxasset[://|id://]") == nil and Library.Utilities:GetIcon(Icon) or {
 		Image = Icon,
@@ -169,6 +171,7 @@ function TabModule:New(Title, Icon, Parent)
 	Tab.AddSection = Tab.Section
 
 	setmetatable(Tab, Elements)
+	restoreScope()
 	return Tab
 end
 

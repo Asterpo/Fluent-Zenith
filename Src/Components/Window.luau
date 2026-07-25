@@ -3,6 +3,7 @@
 local Root = script.Parent.Parent
 local Flipper = require(Root.Packages.Flipper)
 local Creator = require(Root.Modules.Creator)
+local Scope = require(Root.Modules.Scope)
 local Acrylic = require(Root.Modules.Acrylic)
 local Signal = require(Root.Packages.Signal)
 local Assets = require(script.Parent.Assets)
@@ -24,6 +25,7 @@ return function(Config)
 	assert(typeof(Config.Mobile.Size) == "UDim2", "Mobile Config key 'Size' must be a UDim2!")
 	
 	local Window = {
+		Scope = Scope.new(),
 		Minimized = false,
 		OnMinimized = Signal.new(),
 		PostMinimized = Signal.new(),
@@ -39,6 +41,7 @@ return function(Config)
 			Camera.ViewportSize.Y / 2 - Config.Size.Y.Offset / 2
 		),
 	}
+	local restoreScope = Creator.PushScope(Window.Scope)
 
 	local Dragging, DragInput, MousePos, StartPos = false
 	local Resizing, ResizePos = false
@@ -176,18 +179,21 @@ return function(Config)
 	Window.SelectorSizeMotor = Flipper.SingleMotor.new(0)
 	Window.ContainerBackMotor = Flipper.SingleMotor.new(0)
 	Window.ContainerPosMotor = Flipper.SingleMotor.new(94)
+	for _, motor in ipairs({ SizeMotor, PosMotor, Window.SelectorPosMotor, Window.SelectorSizeMotor, Window.ContainerBackMotor, Window.ContainerPosMotor }) do
+		Window.Scope:Motor(motor)
+	end
 
-	SizeMotor:onStep(function(values)
+	Window.Scope:Add(SizeMotor:onStep(function(values)
 		Window.Root.Size = UDim2.new(0, values.X, 0, values.Y)
-	end)
+	end))
 
-	PosMotor:onStep(function(values)
+	Window.Scope:Add(PosMotor:onStep(function(values)
 		Window.Root.Position = UDim2.new(0, values.X, 0, values.Y)
-	end)
+	end))
 
 	local LastValue = 0
 	local LastTime = 0
-	Window.SelectorPosMotor:onStep(function(Value)
+	Window.Scope:Add(Window.SelectorPosMotor:onStep(function(Value)
 		Selector.Position = UDim2.new(0, 0, 0, Value + 17)
 		local Now = tick()
 		local DeltaTime = Now - LastTime
@@ -197,19 +203,19 @@ return function(Config)
 			LastValue = Value
 		end
 		LastTime = Now
-	end)
+	end))
 
-	Window.SelectorSizeMotor:onStep(function(Value)
+	Window.Scope:Add(Window.SelectorSizeMotor:onStep(function(Value)
 		Selector.Size = UDim2.new(0, 4, 0, Value)
-	end)
+	end))
 
-	Window.ContainerBackMotor:onStep(function(Value)
+	Window.Scope:Add(Window.ContainerBackMotor:onStep(function(Value)
 		Window.ContainerAnim.GroupTransparency = Value
-	end)
+	end))
 
-	Window.ContainerPosMotor:onStep(function(Value)
+	Window.Scope:Add(Window.ContainerPosMotor:onStep(function(Value)
 		Window.ContainerAnim.Position = UDim2.fromOffset(0, Value)
-	end)
+	end))
 
 	local OldSizeX
 	local OldSizeY
@@ -419,10 +425,11 @@ return function(Config)
 	end
 
 	function Window:Destroy()
+		if Window.Scope.Destroyed then return end
+		Window.Scope:Destroy()
 		if Library.UseAcrylic then
-			Window.AcrylicPaint.Model:Destroy()
+			if Window.AcrylicPaint.Model then Window.AcrylicPaint.Model:Destroy() end
 		end
-		Window.Root:Destroy()
 	end
 
 	local DialogModule = require(Components.Dialog):Init(Window)
@@ -497,5 +504,6 @@ return function(Config)
 		Window.SelectorPosMotor:setGoal(Instant(TabModule:GetCurrentTabPos()))
 	end)
 
+	restoreScope()
 	return Window
 end

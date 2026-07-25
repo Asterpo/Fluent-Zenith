@@ -34,6 +34,12 @@ expect(ElementSource:find("Element.TitleLabel.Text = tostring(Set or \"\")", 1, 
 local WindowSource = fs.readFile("Src/Components/Window.luau")
 expect(WindowSource:find("ImageRectSize", 1, true) ~= nil, "mobile image rectangle size regression must remain fixed")
 
+local ScopeSource = fs.readFile("Src/Modules/Scope.luau")
+expect(ScopeSource:find("if self.Destroyed then return end", 1, true) ~= nil, "scope destruction must stay idempotent")
+
+local AdapterSource = fs.readFile("Src/Modules/Adapters.luau")
+expect(AdapterSource:find("UNCFilePersistenceAdapter", 1, true) ~= nil, "file persistence adapter must remain available")
+
 local PackageVersion = fs.readFile("wally.toml"):match('version%s*=%s*"([^"]+)"')
 local RuntimeVersion = fs.readFile("Src/init.luau"):match('Version%s*=%s*"([^"]+)"')
 expect(PackageVersion ~= nil and PackageVersion == RuntimeVersion, "package and runtime versions must match")
@@ -41,4 +47,4 @@ expect(PackageVersion ~= nil and PackageVersion == RuntimeVersion, "package and 
 local PlaceProject = fs.readFile("place.project.json")
 expect(PlaceProject:find('"Fluent Zenith"', 1, true) ~= nil, "Studio project must mount Fluent Zenith at the documented path")
 
-print("v1.0.2 regression tests passed")
+print("v1.1.0 regression tests passed")

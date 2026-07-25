@@ -2,12 +2,14 @@ local Root = script.Parent.Parent
 local Themes = require(Root.Themes)
 local Flipper = require(Root.Packages.Flipper)
 local Signal = require(Root.Packages.Signal)
+local Scope = require(Root.Modules.Scope)
 
 local Creator = {
 	Registry = {},
 	Signals = {},
 	Threads = {},
 	TransparencyMotors = {},
+	CurrentScope = nil,
 	DefaultProperties = {
 		ScreenGui = {
 			ResetOnSpawn = false,
@@ -132,8 +134,18 @@ function Creator.Delay(Delay, Function, ...)
 	end
 end
 
-function Creator.AddSignal(Signal: RBXScriptSignal, Function)
-	table.insert(Creator.Signals, Signal:Connect(Function))
+function Creator.AddSignal(Signal: RBXScriptSignal, Function, ScopeOverride)
+	local Connection = Signal:Connect(Function)
+	table.insert(Creator.Signals, Connection)
+	local owner = ScopeOverride or Creator.CurrentScope
+	if owner then owner:Connection(Connection) end
+	return Connection
+end
+
+function Creator.PushScope(scope)
+	local previous = Creator.CurrentScope
+	Creator.CurrentScope = scope
+	return function() Creator.CurrentScope = previous end
 end
 
 function Creator.Disconnect()
@@ -210,6 +222,7 @@ end
 
 function Creator.New(Name, Properties: { [string]: any }?, Children: { [number]: Instance }?): Instance
 	local Object = Instance.new(Name)
+	if Creator.CurrentScope then Creator.CurrentScope:Instance(Object) end
 
 	-- Default properties
 	for Name, Value in next, Creator.DefaultProperties[Name] or {} do
@@ -243,9 +256,11 @@ function Creator.SpringMotor(
 	IgnoreDialogCheck = IgnoreDialogCheck or false
 	ResetOnThemeChange = ResetOnThemeChange or false
 	local Motor = Flipper.SingleMotor.new(Initial)
-	Motor:onStep(function(value)
+	if Creator.CurrentScope then Creator.CurrentScope:Motor(Motor) end
+	local stepConnection = Motor:onStep(function(value)
 		Instance[Prop] = value
 	end)
+	if Creator.CurrentScope then Creator.CurrentScope:Add(stepConnection) end
 
 	if ResetOnThemeChange then
 		Creator.TransparencyMotors[#Creator.TransparencyMotors + 1] = Motor

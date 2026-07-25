@@ -1,79 +1,16 @@
-name: Pushed
+name: CI
 
 on:
   push:
-    paths:
-      - '**.luau'
-      - '**.lua'
-      - '**.rbxm'
-      - '**.json'
-      - '**.yml'
-      - '**.toml'
-      - 'wally.lock'
+    paths: ['**.luau', '**.lua', '**.rbxm', '**.json', '**.yml', '**.toml', 'wally.lock']
   pull_request:
-    paths:
-      - '**.luau'
-      - '**.lua'
-      - '**.rbxm'
-      - '**.json'
-      - '**.yml'
-      - '**.toml'
-      - 'wally.lock'
+    paths: ['**.luau', '**.lua', '**.rbxm', '**.json', '**.yml', '**.toml', 'wally.lock']
 
 permissions:
   contents: read
 
 jobs:
-  build-script:
-    name: Bundle and Upload Fluent Zenith
-    runs-on: windows-2022
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-
-      - name: Setup RoKit
-        uses: CompeyDev/setup-rokit@v0.1.2
-
-      - name: Install Necessary Tools
-        run: |
-          rokit trust rojo-rbx/rojo
-          rokit trust lune-org/lune
-          rokit trust seaofvoices/darklua
-          rokit trust UpliftGames/wally
-          rokit trust JohnnyMorganz/wally-package-types
-          rokit install
-
-      - name: Build
-        run: lune run Lune/Build bundle header=Lune/Build/Header.luau minify=true ci-mode=true
-
-      - name: Run regression tests
-        run: lune run Test.luau
-
-      - name: Compile add-ons
-        shell: pwsh
-        run: |
-          darklua process Addons/SaveManager.luau "$env:RUNNER_TEMP/SaveManager.luau"
-          darklua process Addons/InterfaceManager.luau "$env:RUNNER_TEMP/InterfaceManager.luau"
-
-      - name: Verify distribution assets
-        shell: pwsh
-        run: |
-          $assets = @("Distribution/Fluent.luau", "Distribution/Fluent.rbxm")
-          foreach ($asset in $assets) {
-            if (-not (Test-Path $asset) -or (Get-Item $asset).Length -eq 0) {
-              throw "Expected non-empty release asset: $asset"
-            }
-          }
-
-      - name: Upload Minified Fluent Zenith to Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Fluent.luau
-          path: Distribution/Fluent.luau
-
-      - name: Upload Fluent Zenith Model to Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Fluent.rbxm
-          path: Distribution/Fluent.rbxm
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      artifact-name: fluent-zenith-ci-${{ github.sha }}

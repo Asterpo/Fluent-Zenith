@@ -1,5 +1,7 @@
 local Root = script
 local Runtime = require(Root.Modules.Runtime)
+local Scope = require(Root.Modules.Scope)
+local Adapters = require(Root.Modules.Adapters)
 
 local function Clone<Original>(ToClone: any & Original): (Original, boolean)
 	local Type = typeof(ToClone)
@@ -153,10 +155,12 @@ SharedTable.FluentZenith = SharedTable.FluentZenith or {}
 NotificationModule:Init(BaseContainer)
 
 local Library = {
-	Version = "1.0.2",
+	Version = "1.1.0",
 
 	OpenFrames = {},
 	Options = {},
+	Flags = {},
+	Scope = Scope.new(),
 	Themes = Themes.Names,
 
 	OnUnload = Signal.new(),
@@ -170,6 +174,8 @@ local Library = {
 		Shared = SharedTable,
 		Creator = Creator,
 		Icons = Icons,
+		Scope = Scope,
+		Adapters = Adapters,
 	},
 	Connections = Creator.Signals,
 	Unloaded = false,
@@ -287,7 +293,19 @@ for _, ElementComponent in next, ElementsTable do
 		ElementComponent.ScrollFrame = self.ScrollFrame
 		ElementComponent.Library = Library
 
-		return ElementComponent:New(Idx, Config)
+		local element = ElementComponent:New(Idx, Config)
+		local flag = Config.Flag or Idx
+		if typeof(flag) == "string" then
+			Library.Flags[flag] = element.Value
+			local originalSetValue = element.SetValue
+			if typeof(originalSetValue) == "function" then
+				element.SetValue = function(_, value, ...)
+					originalSetValue(element, value, ...)
+					Library.Flags[flag] = element.Value
+				end
+			end
+		end
+		return element
 	end
 
 	Elements[`Add{ElementComponent.__type}`] = Elements[`Create{ElementComponent.__type}`]
@@ -311,6 +329,7 @@ function Library:Window(Config: {
 		Size: UDim2,
 	}?,
 })
+	assert(not Library.Unloaded, "Cannot create a window after Library:Destroy().")
 	assert(Library.CreatedWindow == nil, debug.traceback("You cannot create more than one window.", 2))
 
 	if not Config.Title then
@@ -370,6 +389,7 @@ function Library:Window(Config: {
 			Size = UDim2.fromOffset(30, 30),
 		},
 	})
+	Library.Scope:Add(Window.Scope)
 
 	-- Security: randomize GUI container name to resist detection
 	BaseContainer.Name = RandomString(math.random(10, 20))
@@ -378,6 +398,17 @@ function Library:Window(Config: {
 	Library:SetTheme(Library.Theme)
 
 	return Window
+end
+
+function Library:overrideSetting(flag: string, value: any): boolean
+	assert(typeof(flag) == "string", "overrideSetting expects a string flag")
+	Library.Flags[flag] = value
+	local option = Library.Options[flag]
+	if option and typeof(option.SetValue) == "function" then
+		option:SetValue(value)
+		return true
+	end
+	return false
 end
 
 function Library:AddWindow(Config)
@@ -397,6 +428,14 @@ function Library:SetTheme(Name: string)
 end
 
 function Library:Destroy()
+	if Library.Unloaded then return end
+	if not Library.CreatedWindow then
+		Library.Unloaded = true
+		Library.Loaded = false
+		Library.Scope:Destroy()
+		Library.GUI:Destroy()
+		return
+	end
 	if Library.CreatedWindow then
 		Library.Unloaded = true
 		Library.Loaded = false
@@ -407,6 +446,7 @@ function Library:Destroy()
 			Library.CreatedWindow.AcrylicPaint.Model:Destroy()
 		end
 
+		Library.Scope:Destroy()
 		Creator.Disconnect()
 
 		for i, v in next, Library.Connections do

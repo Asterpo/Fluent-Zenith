@@ -23,80 +23,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build and verify release assets
-    runs-on: windows-2022
+  validate-release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.validate.outputs.tag }}
     steps:
-      - name: Check out release commit
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
-          submodules: true
-
-      - name: Verify exact release tag
-        shell: pwsh
+      - id: validate
+        shell: bash
         run: |
-          $expected = if ("${{ github.event_name }}" -eq "workflow_dispatch") { "${{ inputs.tag }}" } else { "${{ github.ref_name }}" }
-          if ($expected -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
-            throw "Release tags must use vMAJOR.MINOR.PATCH: $expected"
-          }
-          $actual = git describe --tags --exact-match HEAD
-          if ($actual -ne $expected) {
-            throw "Checked out $actual, expected $expected"
-          }
-          $version = $expected.Substring(1)
-          $packageVersion = [regex]::Match((Get-Content wally.toml -Raw), 'version\s*=\s*"([^"]+)"').Groups[1].Value
-          $runtimeVersion = [regex]::Match((Get-Content Src/init.luau -Raw), 'Version\s*=\s*"([^"]+)"').Groups[1].Value
-          if ($packageVersion -ne $version -or $runtimeVersion -ne $version) {
-            throw "Tag $expected, package $packageVersion, and runtime $runtimeVersion must match"
-          }
-
-      - name: Setup RoKit
-        uses: CompeyDev/setup-rokit@v0.1.2
-
-      - name: Install required tools
-        run: |
-          rokit trust rojo-rbx/rojo
-          rokit trust lune-org/lune
-          rokit trust seaofvoices/darklua
-          rokit trust UpliftGames/wally
-          rokit trust JohnnyMorganz/wally-package-types
-          rokit install
-
-      - name: Run regression tests
-        run: lune run Test.luau
-
-      - name: Compile add-ons
-        shell: pwsh
-        run: |
-          darklua process Addons/SaveManager.luau "$env:RUNNER_TEMP/SaveManager.luau"
-          darklua process Addons/InterfaceManager.luau "$env:RUNNER_TEMP/InterfaceManager.luau"
-
-      - name: Build distribution assets
-        run: lune run Lune/Build bundle header=Lune/Build/Header.luau minify=true ci-mode=true
-
-      - name: Verify assets and create checksums
-        shell: pwsh
-        run: |
-          $assets = @("Distribution/Fluent.luau", "Distribution/Fluent.rbxm")
-          foreach ($asset in $assets) {
-            if (-not (Test-Path $asset) -or (Get-Item $asset).Length -eq 0) {
-              throw "Expected non-empty release asset: $asset"
-            }
-          }
-          Get-FileHash $assets -Algorithm SHA256 | ForEach-Object {
-            "{0} *{1}" -f $_.Hash.ToLowerInvariant(), (Split-Path $_.Path -Leaf)
-          } | Set-Content -NoNewline Distribution/SHA256SUMS.txt
-
-      - name: Upload verified release assets
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-assets
-          if-no-files-found: error
-          path: |
-            Distribution/Fluent.luau
-            Distribution/Fluent.rbxm
-            Distribution/SHA256SUMS.txt
+          tag="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid release tag: $tag"; exit 1; }
+          [[ "$(git describe --tags --exact-match HEAD)" = "$tag" ]] || { echo "Checkout is not tag $tag"; exit 1; }
+          version="${tag#v}"
+          package="$(sed -nE 's/^version[[:space:]]*=[[:space:]]*"([^"]+)"/\1/p' wally.toml)"
+          runtime="$(sed -nE 's/.*Version[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' Src/init.luau)"
+          [[ "$package" = "$version" && "$runtime" = "$version" ]] || { echo "Version mirrors do not match $tag"; exit 1; }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+  build:
+    needs: validate-release
+    uses: ./.github/workflows/build.yml
+    with:
+      artifact-name: release-assets
+      source-ref: ${{ needs.validate-release.outputs.tag }}
 
   publish:
     name: Publish verified release
@@ -128,6 +79,14 @@ jobs:
         with:
           name: release-assets
           path: release-assets
+
+      - name: Verify downloaded immutable artifact
+        working-directory: release-assets
+        run: |
+          sha256sum --check SHA256SUMS.txt
+          test -s release-manifest.json
+          test -s Fluent.luau
+          test -s Fluent.rbxm
 
       - name: Create or update draft release
         env:

@@ -1,0 +1,78 @@
+name: Reusable build
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        required: false
+        type: string
+        default: fluent-zenith-build
+      source-ref:
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source-ref }}
+          submodules: true
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/rokit
+            Packages
+          key: ${{ runner.os }}-rokit-wally-${{ hashFiles('rokit.toml', 'wally.toml', 'wally.lock') }}
+
+      - name: Setup RoKit
+        uses: CompeyDev/setup-rokit@v0.1.2
+
+      - name: Install locked toolchain and dependencies
+        run: |
+          rokit trust rojo-rbx/rojo
+          rokit trust lune-org/lune
+          rokit trust seaofvoices/darklua
+          rokit trust UpliftGames/wally
+          rokit trust JohnnyMorganz/wally-package-types
+          rokit install
+          wally install --project-path .
+
+      - name: Test and smoke test
+        run: lune run Test.luau
+
+      - name: Build once
+        run: lune run Lune/Build bundle header=Lune/Build/Header.luau minify=true ci-mode=true
+
+      - name: Verify assets, size budgets, and manifest
+        shell: pwsh
+        run: |
+          $assets = @("Distribution/Fluent.luau", "Distribution/Fluent.rbxm")
+          $maxBytes = @{ "Fluent.luau" = 524288; "Fluent.rbxm" = 4194304 }
+          foreach ($asset in $assets) {
+            if (-not (Test-Path $asset) -or (Get-Item $asset).Length -eq 0) { throw "Expected non-empty release asset: $asset" }
+            if ((Get-Item $asset).Length -gt $maxBytes[(Split-Path $asset -Leaf)]) { throw "Size budget exceeded: $asset" }
+          }
+          $hashes = Get-FileHash $assets -Algorithm SHA256
+          $hashes | ForEach-Object { "{0} *{1}" -f $_.Hash.ToLowerInvariant(), (Split-Path $_.Path -Leaf) } | Set-Content Distribution/SHA256SUMS.txt
+          $version = [regex]::Match((Get-Content wally.toml -Raw), 'version\s*=\s*"([^"]+)"').Groups[1].Value
+          $files = @{}
+          foreach ($hash in $hashes) { $files[(Split-Path $hash.Path -Leaf)] = @{ size = (Get-Item $hash.Path).Length; sha256 = $hash.Hash.ToLowerInvariant() } }
+          @{ version = $version; commit = $env:GITHUB_SHA; tools = @{ rokit = (rokit --version); wally = (wally --version) }; files = $files } | ConvertTo-Json -Depth 4 | Set-Content Distribution/release-manifest.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          if-no-files-found: error
+          retention-days: 90
+          path: |
+            Distribution/Fluent.luau
+            Distribution/Fluent.rbxm
+            Distribution/SHA256SUMS.txt
+            Distribution/release-manifest.json
