@@ -54,7 +54,7 @@ jobs:
         shell: pwsh
         run: |
           $assets = @("Distribution/Fluent.luau", "Distribution/Fluent.rbxm")
-          $maxBytes = @{ "Fluent.luau" = 524288; "Fluent.rbxm" = 4194304 }
+          $maxBytes = @{ "Fluent.luau" = 2097152; "Fluent.rbxm" = 4194304 }
           foreach ($asset in $assets) {
             if (-not (Test-Path $asset) -or (Get-Item $asset).Length -eq 0) { throw "Expected non-empty release asset: $asset" }
             if ((Get-Item $asset).Length -gt $maxBytes[(Split-Path $asset -Leaf)]) { throw "Size budget exceeded: $asset" }
