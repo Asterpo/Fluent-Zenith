@@ -94,7 +94,7 @@ jobs:
 
       - name: Attest release artifact
         if: github.event_name != 'pull_request'
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             Distribution/Fluent.luau
