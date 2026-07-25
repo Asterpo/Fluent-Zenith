@@ -1,6 +1,6 @@
 [package]
 name = "asterpo/fluent-zenith"
-version = "1.2.3"
+version = "1.2.4"
 license = "MIT"
 authors = ["Asterpo"]
 registry = "https://github.com/UpliftGames/wally-index"

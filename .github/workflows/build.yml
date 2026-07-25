@@ -50,7 +50,7 @@ jobs:
         run: stylua --check --line-endings Windows PublicTypes.luau Test.luau Src/Modules/Adapters.luau Src/Modules/Scope.luau Src/Modules/Runtime.luau Src/Modules/InputValue.luau Addons/Runtime.luau
 
       - name: Lint Luau
-        run: selene --allow-warnings Src Addons Test.luau PublicTypes.luau
+        run: selene --allow-warnings Src Addons PublicTypes.luau
 
       - name: Check strict public sources
         shell: pwsh

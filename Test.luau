@@ -56,4 +56,4 @@ expect(
 	"Studio project must mount Fluent Zenith at the documented path"
 )
 
-print("v1.2.3 regression tests passed")
+print("v1.2.4 regression tests passed")

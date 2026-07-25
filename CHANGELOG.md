@@ -2,6 +2,12 @@
 
 All notable changes are documented here. Entries are generated from normalized pull-request metadata by Release Please.
 
+## [1.2.4] - 2026-07-24
+
+### Fixed
+
+- Run Selene against Roblox sources only; Lune test scripts continue through the dedicated Lune gate.
+
 ## [1.2.3] - 2026-07-24
 
 ### Fixed
