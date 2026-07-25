@@ -1,3 +1,5 @@
+--!strict
+
 local InputValue = {}
 
 function InputValue.Normalize(Value: any, Numeric: boolean, PreviousValue: any, MaxLength: number?): (any, string)

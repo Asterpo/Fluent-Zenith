@@ -1,0 +1,16 @@
+changelog:
+  categories:
+    - title: Added
+      labels: [release:added]
+    - title: Improved
+      labels: [release:improved]
+    - title: Fixed
+      labels: [release:fixed]
+    - title: Security
+      labels: [release:security]
+    - title: Deprecated and removed
+      labels: [release:deprecated, release:removed]
+    - title: Internal engineering
+      labels: [release:internal]
+  exclude:
+    labels: [release-note:none]

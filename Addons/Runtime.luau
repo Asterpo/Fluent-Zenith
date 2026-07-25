@@ -1,3 +1,5 @@
+--!strict
+
 local Runtime = {}
 
 local warned = {}

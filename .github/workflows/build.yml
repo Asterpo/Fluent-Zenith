@@ -41,10 +41,25 @@ jobs:
           rokit trust seaofvoices/darklua
           rokit trust UpliftGames/wally
           rokit trust JohnnyMorganz/wally-package-types
+          rokit trust JohnnyMorganz/StyLua
+          rokit trust Kampfkarren/selene
           rokit install
           wally install --project-path .
 
-      - name: Test and smoke test
+      - name: Check formatting
+        run: stylua --check PublicTypes.luau Test.luau Src/Modules/Adapters.luau Src/Modules/Scope.luau Src/Modules/Runtime.luau Src/Modules/InputValue.luau Addons/Runtime.luau
+
+      - name: Lint Luau
+        run: selene --allow-warnings Src Addons Test.luau PublicTypes.luau
+
+      - name: Check strict public sources
+        shell: pwsh
+        run: |
+          $sources = @('PublicTypes.luau', 'Src/Modules/Adapters.luau', 'Src/Modules/Scope.luau', 'Src/Modules/Runtime.luau', 'Src/Modules/InputValue.luau', 'Addons/Runtime.luau')
+          $missing = $sources | Where-Object { -not ((Get-Content $_ -TotalCount 1) -match '^--!strict') }
+          if ($missing) { throw "Strict Luau analysis requires --!strict: $($missing.FullName -join ', ')" }
+
+      - name: Lune, mock UNC, and release smoke tests
         run: lune run Test.luau
 
       - name: Build once
@@ -64,7 +79,7 @@ jobs:
           $version = [regex]::Match((Get-Content wally.toml -Raw), 'version\s*=\s*"([^"]+)"').Groups[1].Value
           $files = @{}
           foreach ($hash in $hashes) { $files[(Split-Path $hash.Path -Leaf)] = @{ size = (Get-Item $hash.Path).Length; sha256 = $hash.Hash.ToLowerInvariant() } }
-          @{ version = $version; commit = $env:GITHUB_SHA; tools = @{ rokit = (rokit --version); wally = (wally --version) }; files = $files } | ConvertTo-Json -Depth 4 | Set-Content Distribution/release-manifest.json
+          @{ version = $version; tag = $env:GITHUB_REF_NAME; commit = $env:GITHUB_SHA; tools = @{ rokit = (rokit --version); wally = (wally --version); stylua = (stylua --version); selene = (selene --version) }; files = $files } | ConvertTo-Json -Depth 4 | Set-Content Distribution/release-manifest.json
 
       - uses: actions/upload-artifact@v4
         with:
@@ -76,3 +91,11 @@ jobs:
             Distribution/Fluent.rbxm
             Distribution/SHA256SUMS.txt
             Distribution/release-manifest.json
+
+      - name: Attest release artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: |
+            Distribution/Fluent.luau
+            Distribution/Fluent.rbxm

@@ -87,6 +87,8 @@ jobs:
           test -s release-manifest.json
           test -s Fluent.luau
           test -s Fluent.rbxm
+          expected="${{ needs.validate-release.outputs.tag }}"
+          test "$(jq -r .version release-manifest.json)" = "${expected#v}" || { echo "Manifest version does not match release tag"; exit 1; }
 
       - name: Create or update draft release
         env:
@@ -102,9 +104,38 @@ jobs:
             gh release create "$TAG" --title "$TAG" --draft --generate-notes release-assets/*
           fi
 
+      - name: Verify release title and normalized notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          test "$(gh release view "$TAG" --json name --jq .name)" = "$TAG"
+          gh release view "$TAG" --json body --jq .body > release-notes.md
+          test -s release-notes.md
+
       - name: Publish release only after asset upload succeeds
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ steps.release.outputs.tag }}
         run: gh release edit "$TAG" --draft=false --latest
+
+      - name: Verify stable download
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          curl --fail --retry 5 --retry-delay 3 -L "https://github.com/${{ github.repository }}/releases/latest/download/Fluent.luau" -o latest.luau
+          grep -F "Version = \"${TAG#v}\"" latest.luau
+
+      - name: Notify release maintainers
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          SHA: ${{ github.sha }}
+        run: |
+          {
+            echo "## Fluent Zenith $TAG published"
+            echo "Release: https://github.com/${{ github.repository }}/releases/tag/$TAG"
+            echo "Commit: $SHA"
+            echo "Rollback: run the **Roll back latest release** workflow with a known-good tag."
+          } >> "$GITHUB_STEP_SUMMARY"

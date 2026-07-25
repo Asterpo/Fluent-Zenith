@@ -1,0 +1,33 @@
+name: Pull request metadata
+
+on:
+  pull_request:
+    types: [opened, edited, labeled, unlabeled, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Conventional Commit title and release fields
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          [[ "$TITLE" =~ ^(feat|fix|docs|refactor|perf|test|build|ci|chore)(\(.+\))?!?:\ .+ ]] || { echo "Use a Conventional Commit-compatible squash title"; exit 1; }
+          categories=$(grep -Eic '^[-*][[:space:]]*Release note category:[[:space:]]*(Added|Improved|Fixed|Security|Deprecated|Removed|Internal)' <<< "$BODY")
+          impacts=$(grep -Eic '^[-*][[:space:]]*SemVer impact:[[:space:]]*(semver:patch|semver:minor|semver:major|release-note:none)' <<< "$BODY")
+          [[ $categories -eq 1 && $impacts -eq 1 ]] || { echo "Provide exactly one category and SemVer impact"; exit 1; }
+          for field in "User-facing summary" "Why it matters" "Migration or action required" "Compatibility" "Breaking change"; do
+            grep -Eiq "^[-*][[:space:]]*$field:[[:space:]]*[^<].+" <<< "$BODY" || { echo "Missing release-note field: $field"; exit 1; }
+          done
+          if grep -Eiq '^[-*][[:space:]]*Breaking change:[[:space:]]*Yes' <<< "$BODY"; then
+            ! grep -Eiq '^[-*][[:space:]]*Migration or action required:[[:space:]]*(None|<!--)' <<< "$BODY" || { echo "Breaking changes require migration guidance"; exit 1; }
+          fi
+          if [[ "$LABELS" == *"release-note:none"* ]]; then
+            grep -Eiq 'reason|internal' <<< "$BODY" || { echo "release-note:none requires a stated reason"; exit 1; }
+          fi

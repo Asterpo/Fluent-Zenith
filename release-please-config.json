@@ -1,0 +1,9 @@
+{
+  "release-type": "simple",
+  "package-name": "fluent-zenith",
+  "include-component-in-tag": false,
+  "extra-files": [
+    { "type": "generic", "path": "wally.toml" },
+    { "type": "generic", "path": "Src/init.luau" }
+  ]
+}

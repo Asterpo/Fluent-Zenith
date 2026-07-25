@@ -18,7 +18,9 @@ export type Scope = {
 
 local function dispose(resource: any)
 	if typeof(resource) == "RBXScriptConnection" then
-		if resource.Connected then resource:Disconnect() end
+		if resource.Connected then
+			resource:Disconnect()
+		end
 	elseif typeof(resource) == "Instance" then
 		resource:Destroy()
 	elseif typeof(resource) == "function" then
@@ -47,13 +49,23 @@ function Scope:Add(resource: any): any
 	return resource
 end
 
-function Scope:Connection(connection: RBXScriptConnection): RBXScriptConnection return self:Add(connection) end
-function Scope:Instance(instance: Instance): Instance return self:Add(instance) end
-function Scope:Motor(motor: any): any return self:Add(motor) end
-function Scope:Child(): Scope return self:Add(Scope.new()) end
+function Scope:Connection(connection: RBXScriptConnection): RBXScriptConnection
+	return self:Add(connection)
+end
+function Scope:Instance(instance: Instance): Instance
+	return self:Add(instance)
+end
+function Scope:Motor(motor: any): any
+	return self:Add(motor)
+end
+function Scope:Child(): Scope
+	return self:Add(Scope.new())
+end
 
 function Scope:Destroy()
-	if self.Destroyed then return end
+	if self.Destroyed then
+		return
+	end
 	self.Destroyed = true
 	for index = #self._resources, 1, -1 do
 		dispose(self._resources[index])

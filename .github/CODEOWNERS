@@ -1,0 +1,6 @@
+# Release automation and dependencies require an explicit maintainer review.
+/.github/ @Asterpo
+/rokit.toml @Asterpo
+/wally.toml @Asterpo
+/wally.lock @Asterpo
+/Lune/Build/ @Asterpo
